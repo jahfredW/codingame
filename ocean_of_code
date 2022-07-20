@@ -1,0 +1,198 @@
+import sys
+import math
+
+trajet = []
+
+"""
+[y]= [True for item in liste if (0,3) in item]
+print(y)
+"""
+"""
+Etats : 
+NORD = 'N'
+SUD = 'S'
+EST = 'E'
+OUEST = 'O'
+"""
+
+
+def island_search(array):
+    """
+    localisation des cellules innaccessibles ( îles)
+    arguments : array
+    renvoie : liste de liste des cellules interdites
+
+    """
+    liste = [[(x, y) for x in range(len(array)) if array[y][x][1] == 'x'] for y in range(len(array))]
+    return liste
+
+
+def sector(num: int):
+    """
+    parsing des secteurs
+    param : numero de secteur
+    returne liste des cellules du secteur
+    """
+    liste = []
+    if num == 1:
+        liste = [[(x, y) for x in range(5)] for y in range(5)]
+    elif num == 2:
+        liste = [[(x, y) for x in range(5,10)] for y in range(5)]
+    elif num == 3:
+        liste = [[(x, y) for x in range(10,15)] for y in range(5)]
+    elif num == 4:
+        liste = [[(x, y) for x in range(5)] for y in range(5,10)]
+    elif num == 5:
+        liste = [[(x, y) for x in range(5,10)] for y in range(5,10)]
+    elif num == 6:
+        liste = [[(x, y) for x in range(10,12)] for y in range(5,10)]
+    elif num == 7:
+        liste = [[(x, y) for x in range(5)] for y in range(10,15)]
+    elif num == 8:
+        liste = [[(x, y) for x in range(5,10)] for y in range(10,15)]
+    elif num == 9:
+        liste = [[(x, y) for x in range(10,15)] for y in range(10,15)]
+    return liste
+
+
+def debug(item):
+    print(f'{item}', file=sys.stderr, flush=True)
+
+
+class Submarine():
+    def __init__(self, x, y, mylife, opplife, torpedo, sonar, silence, mine, result, order):
+        self._x = x
+        self._y = y
+        self._coord = (self._x, self._y)
+        self._mylife = mylife
+        self._opplife = opplife
+        self._torpedo = torpedo
+        self.sonar = sonar
+        self._silence = silence
+        self._mine = mine
+        self._result = result
+        self._order = order
+
+
+class C_map():
+
+    def __init__(self, array, item: object):
+        self._island_pos = island_search(array)
+        self._submarine_pos = item._coord
+        self._submarine_trajet = self.trajet()
+        self.visited_cell()
+        self.move()
+
+    def visited_cell(self):
+        array[self._submarine_pos[1]][self._submarine_pos[0]][0] = True
+        
+
+    def trajet(self):
+        state = ""
+        trajet.append((self._submarine_pos[0], self._submarine_pos[1]))
+        if len(trajet) == 3:
+            trajet.pop(0)
+        if len(trajet) >= 2:
+            if trajet[1][0] - trajet[0][0] == -1:
+                state = 'W'
+            elif trajet[1][0] - trajet[0][0] == 1:
+                state = 'E'
+            if trajet[1][1] - trajet[0][1] == -1:
+                state = 'N'
+            elif trajet[1][1] - trajet[0][1] == 1:
+                state = 'S'
+        else:
+            state = 'W'
+
+        return state
+
+    def move(self):
+        x = self._submarine_pos[0]
+        y = self._submarine_pos[1]
+        """
+        permet de diriger le sous_marin à travers la map
+        donné à l'init.
+        insérée dans le print
+        """
+        debug((x,y))
+        
+
+        debug(array[y][x + 1][1])
+        debug(array[y][x - 1][0])
+        if self._submarine_trajet == 'W':
+            if array[y][x - 1][1] == 'x' or array[y][x - 1][0] == True or self._submarine_pos[0] == 0:
+                debug('ici')
+                if array[y-1][x][1] != 'x' and array[y - 1][x][0] == False and self._submarine_pos[1] != 0:
+                    self._submarine_trajet = 'N'
+                else:
+                    self._submarine_trajet = 'S'
+
+        if self._submarine_trajet == 'S':
+            if self._submarine_pos[1] == 14 or array[y + 1][x][1] == 'x' or array[y + 1][x][0] == True:
+                if array[y][x-1][1] != 'x' and array[y][x - 1][0] == False and self._submarine_pos[0] != 0:
+                    self._submarine_trajet = 'W' 
+                elif array[y][x + 1] != 'x' and array[y][x + 1][0] == False and self._submarine_pos[0] != 14 :   
+                    self._submarine_trajet = 'E'
+
+        if self._submarine_trajet == 'N':
+            if array[y - 1][x][1] == 'x' or array[y - 1][x][0] == True or self._submarine_pos[1] == 0:
+                if array[y][x-1][1] != 'x' and array[y][x - 1][0] == False and self._submarine_pos[0] != 0:
+                    self._submarine_trajet = 'W' 
+                elif array[y][x + 1] != 'x' and array[y][x + 1][0] == False and self._submarine_pos[0] != 14 :   
+                    self._submarine_trajet = 'E'
+
+        if self._submarine_trajet == 'E':
+            if self._submarine_pos[0] != 14:
+                if array[y][x + 1][1] == 'x' or array[y][x + 1][0] == True or self._submarine_pos[0] == 14:
+                    debug('la')
+                    if array[y + 1][x][1] != 'x' and array[y + 1][x][0] == False and self._submarine_pos[1] != 14:
+                        self._submarine_trajet = 'S' 
+                    elif array[y][x + 1] != 'x' and array[y][x + 1][0] == False and self._submarine_pos[0] != 14 :   
+                        self._submarine_trajet = 'N'
+                else:
+                    if array[y + 1][x][1] != 'x' and array[y + 1][x][0] == False and self._submarine_pos[1] != 14:
+                        self._submarine_trajet = 'S' 
+                    elif array[y][x + 1] != 'x' and array[y][x + 1][0] == False and self._submarine_pos[0] != 14 :   
+                        self._submarine_trajet = 'N'
+
+        
+
+def build_map():
+    array = []
+    non_access_cell = False
+    width, height, my_id = [int(i) for i in input().split()]
+    for i in range(height):
+        line_input = input()
+        line = []
+        for car in line_input:
+            if car == 'x':
+                non_access_cell = True
+                line.append([non_access_cell,car])
+            else:
+                non_access_cell = False
+                line.append([non_access_cell, car])
+        array.append(line)
+    return array
+
+array = build_map()
+debug(array)
+print("7 7")
+
+# game loop
+while True:
+    x, y, my_life, opp_life, torpedo_cooldown, sonar_cooldown, silence_cooldown, mine_cooldown = [int(i) for i in input().split()]
+    sonar_result = input()
+    opponent_orders = input()
+    submarine = Submarine(x, y, my_life, opp_life, torpedo_cooldown, sonar_cooldown, silence_cooldown, mine_cooldown, sonar_result, opponent_orders)
+    #debug(submarine._order)
+    mapp = C_map(array, submarine)
+    debug(mapp._island_pos)
+    debug(array)
+    debug(array[7][2])
+    debug(mapp._submarine_trajet)
+    debug(opponent_orders)
+    #debug(mapp.trajet())
+    # Write an action using print
+    # To debug: print("Debug messages...", file=sys.stderr, flush=True)
+
+    print(f"MOVE {mapp._submarine_trajet} TORPEDO | TORPEDO 3 5")
