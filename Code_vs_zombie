@@ -1,0 +1,97 @@
+import sys
+import math
+
+# Save humans, destroy zombies!
+
+
+
+
+def where_are_humans(dico : dict, x: int, y: int, zombie: bool):
+    """
+    fonction de la classe Zombie:
+    détermine les distances des humains
+    détermine la distance la plus courte
+    détermine l'index de l'humain le plus proche
+    """
+    near_humans = {}
+    for key, value in dico.items():
+        dist = math.sqrt(pow(value['human_x'] - x, 2) + pow(value['human_y'] - y, 2))
+        near_humans[key] = dist
+    dist_min = min(near_humans.values())
+    dist_index = [key for key,value in near_humans.items() if value == min(near_humans.values())][0]
+    if zombie:
+        ratio = dist_min // 400
+    else:
+        ratio = dist_min // 1000
+    return {
+        "dist_index" : dist_index,
+        "distance_mini" : dist_min,
+        "ratio" : ratio,
+    }
+    
+
+def debug(item):
+    print (f'{item}', file=sys.stderr, flush=True)
+
+humans_alive = {}
+zombie_dico = {}
+zombie = False
+
+# game loop
+while True:
+    humans_alive = {}
+    zombie_alive = {}
+    zombie_alive_next_pos = {}
+    liste_zombie = []
+    liste_humans = []
+    x, y = [int(i) for i in input().split()]
+    
+    human_count = int(input())
+    for i in range(human_count):
+        human_id, human_x, human_y = [int(j) for j in input().split()]
+        humans_alive[human_id] = {
+            "human_id" : human_id,
+            "human_x" : human_x,
+            'human_y' : human_y
+        }
+
+    zombie_count = int(input())
+
+    for i in range(zombie_count):
+        zombie_id, zombie_x, zombie_y, zombie_xnext, zombie_ynext = [int(j) for j in input().split()]   
+        zombie_alive[zombie_id] = {
+            "zombie_x" : zombie_x,
+            "zombie_y" : zombie_y
+        }
+
+        zombie_alive_next_pos[zombie_id] = {
+            "zombie_x" : zombie_xnext,
+            "zombie_y" : zombie_ynext
+        }
+
+    nearest_human = where_are_humans(humans_alive, x, y, False)
+    for z_k, z_value in zombie_alive.items():
+        result = where_are_humans(humans_alive, zombie_alive[z_k]['zombie_x'], zombie_alive[z_k]['zombie_y'], True)
+        liste_zombie.append(result)
+    debug(nearest_human)
+    debug(liste_zombie)
+    
+    
+    for z_dico in liste_zombie:
+        if z_dico['ratio'] < nearest_human['ratio']:
+            goto = z_dico["dist_index"]
+            print(f'{zombie_alive[goto]["zombie_x"]} {zombie_alive[goto]["zombie_y"]}')
+        else:
+            goto = nearest_human['dist_index']
+            print(f'{humans_alive[goto]["human_x"]} {humans_alive[goto]["human_y"]}')
+
+    
+        
+    
+
+    # Write an actionusing print
+    # To debug: print("Debug messages...", file=sys.stderr, flush=True)
+
+    #créer l'objet ASh 
+    # Your destination coordinates
+    
