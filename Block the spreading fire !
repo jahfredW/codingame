@@ -1,0 +1,370 @@
+import sys
+import math
+
+area = []
+safe_liste = []
+super_boolean = True
+safe_cells = []
+x = 0
+y = 1
+
+
+def distance_max(dico_house_dist):
+    max_value = max(dico_house_dist.values())
+    for k, v in dico_house_dist.items():
+        if v == max_value:
+            return k
+
+
+def search_house_2(area):
+    dico_house = {}
+    index = 0
+    for y in range(height):
+        for x in range(width):
+            if area[y][x] == 'X':
+                dico_house[index] = (x,y)
+                index += 1
+    return dico_house       
+
+def search_distance_house_fire(fire_x, fire_y, dico_house):
+    dico_distance = {}
+    for key, value in dico_house.items():
+        dist = math.sqrt(math.pow(value[0] - fire_x, 2) + (math.pow(value[1] - fire_y, 2)))
+        dico_distance[key] = dist
+    return dico_distance
+
+
+def debug(item):
+    print(f'{item}' , file=sys.stderr, flush=True)
+
+
+def search_house(area, height, width):
+    """
+    cherche les maisons dans la map,
+    renvoie les coordonnées
+    """
+    liste_house = []
+    for y in range(height):
+        for x in range(width):
+            if area[y][x] == 'X':
+                liste_house.append((x,y))
+    return liste_house
+
+
+def locate_fire(house, fire_x, fire_y, area):
+    debug(house)
+    state = ""
+    if fire_y < house[1]:
+        #le feu est au sud 
+        state = "N"
+    elif fire_y > house[1]:
+        state = "S"
+    
+    if fire_y != house[1]:
+        if fire_x > house[0]:
+            state += 'E'
+        if fire_x < house[0]:
+            state += 'W'
+    else:
+        if fire_x > house[0]:
+            state == 'E'
+    
+        elif fire_x < house[0]:
+            state == 'W'
+
+    return state
+
+
+def middle_fire_house(fire_x, fire_y, house_coord):
+    
+    middle_coord_x = ((house_coord[0] + fire_x) // 2)
+    middle_coord_y = ((house_coord[1] + fire_y) // 2)
+    middle_coord = (middle_coord_x, middle_coord_y)
+    return middle_coord
+
+
+def E_pattern(middle_coord, cooldown, area, height, width, fire_progress_dico):
+    global super_boolean
+    global x
+    global y
+    output = ""
+    a = middle_coord[0] 
+    b = middle_coord[1] 
+    
+    if cooldown == 0:
+        if a < width  and b < height :
+            if super_boolean == True:
+                a += x
+                b += x
+                if b >= height:
+                    b = height - 1
+                if a >= width:
+                    a = width - 1
+                if area[b][a] != '#' and (a,b) not in fire_progress_dico.keys():
+                    #debug('ici')
+                    output = f'{a} {b}'
+                else:
+                    output = 'WAIT'
+                x += 1 
+                super_boolean = False
+            else:
+                a -= x
+                b -= x
+                if b < 0:
+                    b = 0
+                if a < 0:
+                    a = 0
+                if b < 0:
+                    b = 0
+                if area[b][a] != '#' and (a,b) not in fire_progress_dico.keys():
+                    debug('ici')
+                    output = f'{a} {b}' 
+                else:
+                    output = 'WAIT'
+                super_boolean = True
+        else:
+            output = 'WAIT'
+    else:
+        output = 'WAIT'
+
+    return output
+
+
+def W_pattern(middle_coord, cooldown, area, height, width, fire_progress_dico):
+    global super_boolean
+    global x
+    global y
+    output = ""
+    a = middle_coord[0]
+    b = middle_coord[1]
+    
+    if cooldown == 0:
+        if a < width  and b < height :
+            if super_boolean == True:
+                a -= x
+                b += x
+                if b >= height:
+                    b = height - 1
+                if a <= 0:
+                    a = 0
+                if area[b][a] != '#' and (a,b) not in fire_progress_dico.keys():
+                    #debug('ici')
+                    output = f'{a} {b}'
+                else:
+                    output = 'WAIT'
+                x += 1 
+                super_boolean = False
+            else:
+                a += x
+                b -= x
+                if b < 0:
+                    b = 0
+                if a >= height:
+                    a = height - 1
+                
+                if area[b][a] != '#' and (a,b) not in fire_progress_dico.keys():
+                    debug('ici')
+                    output = f'{a} {b}' 
+                else:
+                    output = 'WAIT'
+                super_boolean = True
+        else:
+            output = 'WAIT'
+    else:
+        output = 'WAIT'
+
+    return output
+
+
+def make_splash_liste(house):
+    splash_liste = []
+    house_NW = (house[0] - 1, house[1] - 1)
+    house_N = (house[0], house[1] - 1)
+    house_NE = (house[0] + 1, house[1] - 1)
+    house_W = (house[0] - 1, house[1])
+    house_E = (house[0] + 1, house[1])
+    house_SW = (house[0] - 1, house[1] + 1)
+    house_S = (house[0], house[1] + 1)
+    house_SE = (house[0] + 1, house[1] + 1)
+    splash_liste = [house_NW, house_N, house_NE, house_W, house_E, house_SW, 
+    house_S, house_SE]
+
+    return splash_liste
+
+
+def cut_around_house(house_splash_liste, fire_liste):
+    global area
+    global safe_cells
+    
+    for splash in house_splash_liste:
+        
+        debug(len(safe_cells))
+        debug(len(house_splash_liste))
+        if (splash[0], splash[1]) not in fire_liste:
+            if area[splash[1]][splash[0]] == '.':
+                if cooldown == 0 and splash not in safe_cells:
+                    output = f"{splash[0]} {splash[1]}"
+                    area[splash[0]][splash[1]] = '#'
+                    safe_cells.append(splash)
+                    return output
+                    
+                elif cooldown > 0 and splash in safe_cells:
+                    output = 'WAIT'
+                    return output
+                elif cooldown == 0 and splash in safe_cells and len(safe_cells) < len(house_splash_liste):
+                    continue
+                
+                elif cooldown == 0 and splash in safe_cells and len(safe_cells) == len(house_splash_liste):
+                    debug('ici')
+                    house_splash_liste.pop(0)
+                    return 'WAIT'
+                
+                else:
+                    return 'WAIT'
+
+        else:
+            return 'WAIT'
+
+
+
+def N_pattern(house_coord, cooldown, area, height, width, fire_progress_dico):
+    global super_boolean
+    global x
+    global y
+    debug(safe_liste)
+    output = ""
+    a = house_coord[0] - 3
+    b = house_coord[1]
+    debug((a,b))
+    if (a,b) in fire_progress_dico.keys():
+        debug('ok')
+    if cooldown == 0:
+        if a < width  and b < height :
+            if super_boolean == True:
+                b += x
+                if b >= height:
+                    b = height - 1
+                debug(width)
+                debug(a)
+                debug(b)
+                if area[b][a] != '#' and (a,b) not in fire_progress_dico.keys():
+                    #debug('ici')
+                    output = f'{a} {b}'
+                else:
+                    output = 'WAIT'
+                x += 1 
+                super_boolean = False
+            else:
+                b -= x
+                if b < 0:
+                    b = 0
+                debug(width)
+                debug(a)
+                debug(b)
+                if area[b][a] != '#' and (a,b) not in fire_progress_dico.keys():
+                    debug('ici')
+                    output = f'{a} {b}' 
+                else:
+                    output = 'WAIT'
+                super_boolean = True
+        else:
+            output = 'WAIT'
+    else:
+        output = 'WAIT'
+
+    return output
+
+
+def cut_trees_pattern(fire_x,fire_y, fire_progress_dico, area):
+    global fire_x_copy
+    global fire_y_copy
+    output = ""
+    fire_departure = (fire_x, fire_y)
+    if cooldown == 0:
+        fire_x_copy = fire_x_copy + 1
+        if area[fire_y_copy][fire_x_copy] != '#':
+            if (fire_x_copy,fire_y_copy) not in fire_progress_dico.keys():
+                output = f'{fire_x_copy} {fire_y_copy}'
+            else:
+                output = 'WAIT'
+        else:
+            output = "WAIT"
+    else:
+        output = 'WAIT'
+    return output
+
+
+
+
+
+tree_treatment_duration, tree_fire_duration, tree_value = [int(i) for i in input().split()]
+
+house_treatment_duration, house_fire_duration, house_value = [int(i) for i in input().split()]
+
+width, height = [int(i) for i in input().split()]
+
+fire_start_x, fire_start_y = [int(i) for i in input().split()]
+for i in range(height):
+    grid_line = input()
+    area.append(list(grid_line))
+fire_x_copy = fire_start_x
+fire_y_copy = fire_start_y 
+
+#liste des maisons
+house_liste = search_house(area, height, width)
+#debug(house_liste[0])
+#localisation du feu ( N S E W)
+if house_liste: 
+    
+    house_dico = search_house_2(area)
+    dico_dist = search_distance_house_fire(fire_start_x, fire_start_y, house_dico)
+    max_house_index = distance_max(dico_dist)
+    
+    state = locate_fire(house_dico[max_house_index], fire_start_x, fire_start_y, area)
+#coord du milieu feu _ maison
+    middle_coord = middle_fire_house(fire_start_x, fire_start_y, house_dico[max_house_index])
+    splash_liste = make_splash_liste(house_liste[0])
+    debug(state)
+#pattern du NW
+
+#puis 2 cas : 1 maison ou plusieurs
+#si une maison pas de soucis
+#sinon on grade la max pour avoir le temps de sécuriser. 
+
+debug(tree_fire_duration)
+
+while True:
+    fire_progress_dico = {}
+    fire_liste = []
+    cooldown = int(input())  # number of turns remaining before you can cut a new cell
+    for i in range(height):
+        for index, j in enumerate(input().split()):
+            # fire_progress: state of the fire in this cell (-2: safe, -1: no fire, 0<=.<fireDuration: fire, fireDuration: burnt)
+            fire_progress = int(j)
+            if 0 <= fire_progress <= tree_fire_duration:
+                fire_progress_dico[(index, i)] = fire_progress
+                fire_liste.append((index, i))
+    debug(fire_progress_dico)
+
+    if house_liste:
+        if state == 'NW' and tree_fire_duration == 2 and width == 20:
+            output = N_pattern(house_liste[0], cooldown, area, height, width, fire_progress_dico)
+        elif state == 'NW':
+            output = W_pattern(middle_coord,cooldown, area, height, width, fire_progress_dico)
+        
+        else:
+            output = E_pattern(middle_coord,cooldown, area, height, width, fire_progress_dico)
+            #output = cut_around_house(splash_liste, fire_liste)
+    else:
+        output = cut_trees_pattern(fire_start_x,fire_start_y, fire_progress_dico, area)
+    
+    # WAIT if your intervention cooldown is not zero, else position [x] [y] of your intervention.
+    print(output)
+
+#to do:
+#gérer le cas d'erreur avec la cellule en feu
+#gérer le cas de la ligne droite
+#gérer le cas sans maison 
+
+#gérer la diagonale SW
+#si plusieurs maisons, calculer les coords de la plus éloignée
