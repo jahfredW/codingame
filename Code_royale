@@ -1,0 +1,396 @@
+import sys
+import math
+import copy
+import random
+
+# Auto-generated code below aims at helping you parse
+Xmin = 3000
+Ymin = 3000
+coord_min = []
+coord_dict = {}
+dico_unit = {}
+dico_structure = {}
+NORMAL_STATUS = 0
+OFFENSIVE_STATUS = 1
+DEFENSIVE_STATUS = 2
+TOWER_STATUS = 3
+REPLY_STATUS = 4
+ME = 0
+ENNEMY = 1
+CHEVALIER = MINE = 0
+ARCHER = 1
+TOWER = 1
+GEANT = 1 
+CASERNE = 2
+mine = 0
+switch = False
+mine_update = False
+changing_direction = False
+
+
+
+
+
+
+
+
+liste_construct_ok = []
+
+
+class Queen():
+    def __init__(self):
+        self._unit_type = -1
+        self._position = self.queen_position()
+        self._health = self.queen_health()
+        self._queen_strategy = self.strategy_status()
+        
+        
+
+    def queen_position(self):
+        return dico_units[0][-1]['position']
+
+    def queen_health(self):
+        return dico_units[0][-1]['health']
+
+    def get_position(self):
+        return self._position
+
+    def get_health(self):
+        return self._health
+
+    def strategy_status(self):
+        status = 0
+        
+        if ennemy_chevalier < 4 :
+            
+            if mines < 3 :
+                status = NORMAL_STATUS
+            elif mines == 3 and caserne_chevalier < 1:
+                status = OFFENSIVE_STATUS
+            elif mines == 3 and caserne_chevalier == 1:
+                status = NORMAL_STATUS
+            elif mines >= 4 and caserne_chevalier == 1 and caserne_archer < 2:
+                status = DEFENSIVE_STATUS
+            elif mines >= 4 and caserne_chevalier == 1 and caserne_archer == 1 and tower < 3:
+                status = TOWER_STATUS
+            elif mines >= 4 and caserne_archer == 1 and tower == 3 and caserne_chevalier == 1 and tower ==3:
+                status = REPLY_STATUS
+            else:
+                status = REPLY_STATUS
+
+        elif ennemy_chevalier >= 4 and caserne_chevalier >= 1 and ennemy_tower == 0:
+            status = TOWER_STATUS
+
+        elif ennemy_chevalier >= 4 and caserne_chevalier >= 1 and ennemy_tower != 0:
+            status = REPLY_STATUS
+        
+
+        
+        return status
+
+
+    def queen_action(self):
+       
+        queen_decision(self._queen_strategy)
+        
+
+    def training(self):
+        global switch
+
+        if int(gold) >= 100 :
+            if len(liste_chevalier) > 0 :
+                train(liste_chevalier[random.randint(0, len(liste_chevalier) - 1)])
+            elif archer == 0 and len(liste_archer) > 0 :
+                train(liste_archer[0])
+            else:
+                print('TRAIN')
+        else:
+            print('TRAIN')
+
+
+
+def queen_decision(status):
+    global changing_direction
+
+    if touched_site == -1 and status != REPLY_STATUS :
+        
+        id_min, distance_reine_sites = distance_min_queen_site(coord_dict, dico_structure, dico_units[0][-1]['position'], touched_site)
+        move_to_site(coord_dict, id_min)
+
+    elif (touched_site == -1 or dico_structure[touched_site]['owner'] == 0 ) and status == REPLY_STATUS :
+        
+        id_min, distance_reine_sites = distance_min_queen_site(coord_dict, dico_structure, dico_units[0][-1]['position'], touched_site)
+        move_to_coord_init()
+       
+
+    elif touched_site != -1 and dico_structure[touched_site]['owner'] != 0:
+        if status == NORMAL_STATUS:
+            build_mine(touched_site)
+        elif status == DEFENSIVE_STATUS:
+            build_barracks(touched_site, 'ARCHER')
+        elif status == TOWER_STATUS:
+            build_tower(touched_site)
+        elif status == OFFENSIVE_STATUS:
+            build_barracks(touched_site, 'KNIGHT')
+        
+            
+
+    elif touched_site != -1 and dico_structure[touched_site]['owner'] == 0 and dico_structure[touched_site]['structure_type'] == 0 and status != REPLY_STATUS  :
+            if dico_structure[touched_site]['param_1'] < dico_structure[touched_site]['ignore_2'] :
+                debug('0', 'ici')
+                build_mine(touched_site)
+            else:
+                id_min, distance_reine_sites = distance_min_queen_site(coord_dict, dico_structure, dico_units[0][-1]['position'], touched_site)
+                move_to_site(coord_dict, id_min)
+        
+    else:
+        id_min, distance_reine_sites = distance_min_queen_site(coord_dict, dico_structure, dico_units[0][-1]['position'], touched_site)
+        move_to_site(coord_dict, id_min)
+
+
+
+def debug(id, arg):
+    print(f"{id} : {arg}", file=sys.stderr, flush=True)
+
+
+def move_to_next_site(dico_min_copy, current_site, liste):
+    
+    dist_min = 9000
+    for site_id, dist in dico_min_copy.items():
+        if site_id not in liste:
+        
+            if dist < dist_min:
+                id_min = site_id
+    
+    return id_min
+
+
+def distance_min_queen_site(sites_dico: dict, dico_structure, QueenPos: dict, current_site):
+    """
+    nom : site_distance_min_Queen_site
+    arguments : 
+    - sites_dico : le dico des coordonnées des sites - 
+    - QueenPos : Le dico des coordonnées de la reine - 
+    - sortie : l'id du site le plus proche de la Reine
+    """
+    dist_min = 9000
+    dico = {}
+    for site_id, coord in sites_dico.items():
+        if site_id != current_site and dico_structure[site_id]['owner'] != 0:
+            dist = math.sqrt(pow((coord['position'][0] - QueenPos[0]), 2) + pow((coord['position'][1] - QueenPos[1]), 2))
+            dico[site_id] = dist
+
+            if dist < dist_min:
+                dist_min, id_min = dist, site_id
+
+    return id_min, dico
+
+
+        
+def get_sites():
+    """
+    nom: get sites
+    arguments : aucun
+    sortie : le nombre total de sites, un dictionnaire avec coordonnées et radius
+    """
+    num_sites = int(input())
+    for i in range(num_sites):
+        site_id, x, y, radius = [int(j) for j in input().split()]
+        coord_dict[site_id] = { 
+            'position' : (x, y),
+            'radius' : radius
+        }
+
+    return num_sites, coord_dict
+
+
+def move_to_site(coord_dict, id_min):
+    print(f'MOVE {coord_dict[id_min]["position"][0]} {coord_dict[id_min]["position"][1]}')
+
+def move_to_coord_init():
+    print(f'MOVE {30} {30}')
+
+def move_to_bottom():
+    print(f'MOVE {30} {950}')
+
+
+def build_barracks(siteId: int, hero:str):
+    print(f'BUILD {siteId} BARRACKS-{hero}')
+
+def build_mine(siteId: int):
+    
+    print(f'BUILD {siteId} MINE')
+    
+def build_tower(siteId: int):
+    print(f'BUILD {siteId} TOWER')
+    
+
+def train(id_site: int = None):
+    if mine_update == True:
+        pass
+    if id_site and id_site != -1:
+        print(f'TRAIN {id_site}')
+    else:
+        print('TRAIN')
+
+
+
+
+def dico_structure_real_time(site_id, structure_type, owner, param_1, param_2, ignore_1, ignore_2):
+    
+    dico_structure[site_id] = { 
+            'owner' : owner,
+            'structure_type' : structure_type,
+            'param_1' : param_1,
+            'param_ 2' : param_2,
+            'ignore_1' : ignore_1,
+            'ignore_2' : ignore_2
+        }
+    
+    return dico_structure
+
+
+def get_gold_touched_site():
+    gold, touched_site = input().split()
+    touched_site = int(touched_site)
+    return gold, touched_site
+
+
+def calcul_nbre_structure(site_id,structure_type, owner, mine, tower, caserne, param_2, caserne_archer, caserne_chevalier, 
+liste_mine, liste_tower, liste_chevalier, liste_archer, ignore_1, ignore_2):
+    
+    
+    if structure_type == MINE and owner == ME:
+        mine += 1
+        liste_mine.append(site_id)
+    if structure_type == TOWER and owner == ME:
+        tower += 1
+        liste_tower.append(site_id)
+    if structure_type == CASERNE and owner == ME:
+        caserne += 1
+    if structure_type == CASERNE and owner == ME and param_2 == ARCHER:
+        caserne_archer += 1
+        liste_archer.append(site_id)
+    if structure_type == CASERNE and owner == ME and param_2 == CHEVALIER:
+        caserne_chevalier += 1
+        liste_chevalier.append(site_id)
+        
+
+    return mine, caserne , tower, caserne_archer, caserne_chevalier, liste_mine, liste_tower, liste_chevalier, liste_archer
+    
+
+
+def get_all_structures():
+    mine = 0
+    tower = 0
+    ennemy_tower = 0
+    caserne = 0
+    caserne_chevalier = 0
+    caserne_archer = 0
+    liste_mine = []
+    liste_tower = []
+    liste_archer = []
+    liste_chevalier = []
+
+    dico = {}
+    for i in range(num_sites):
+        # ignore_1: used in future leagues
+        # ignore_2: used in future leagues
+        # structure_type: -1 = No structure, 2 = Barracks
+        # owner: -1 = No structure, 0 = Friendly, 1 = Enemy
+        site_id, ignore_1, ignore_2, structure_type, owner, param_1, param_2 = [int(j) for j in input().split()]
+        if structure_type == 1 and owner == 1:
+            ennemy_tower += 1
+        
+        mine, caserne, tower, caserne_archer, caserne_chevalier, liste_mine, liste_tower, liste_chevalier, liste_archer = calcul_nbre_structure(site_id,structure_type, owner, mine, tower, caserne, param_2, 
+        caserne_archer, caserne_chevalier, liste_mine, liste_tower, liste_chevalier, liste_archer, ignore_1, ignore_2)
+
+        dico = dico_structure_real_time(site_id, structure_type, owner, param_1, param_2, ignore_1, ignore_2)
+
+        
+
+
+    return dico, mine, tower, caserne_archer, caserne_chevalier, liste_mine, liste_tower, liste_chevalier, liste_archer, ennemy_tower
+
+
+
+def get_all_units():
+    archer = 0
+    ennemy_chevalier = 0
+    dico_unit = {}
+    num_units = int(input())
+    for i in range(num_units):
+        # unit_type: -1 = QUEEN, 0 = KNIGHT, 1 = ARCHER
+        x, y, owner, unit_type, health = [int(j) for j in input().split()]
+        if unit_type == 1 and owner == 0:
+            archer += 1
+        if unit_type == 0 and owner == 1:
+            ennemy_chevalier += 1
+        dico_unit[owner] = {
+            unit_type : {
+            "health" : health,
+            "position" : (x, y)}
+        }
+    return dico_unit, archer, ennemy_chevalier
+
+num_sites, coord_dict = get_sites()
+debug('coord_dict' , coord_dict)
+
+
+
+
+
+
+# game loop
+while True:
+    
+    # touched_site: -1 if none
+    #or et site investi par la reine
+    gold, touched_site = get_gold_touched_site()
+    debug('gold:', gold)
+    #toutes les structures sont récupérées dans dico_structures
+    dico_structures, mines, tower, caserne_archer, caserne_chevalier, liste_mine, liste_tower, liste_chevalier, liste_archer, ennemy_tower = get_all_structures()
+    #récupération de toutes les unités dépoyés sur le terrain
+    dico_units, archer, ennemy_chevalier = get_all_units()
+    
+    debug('dico_structure:', dico_structures)
+    debug('nbre_mines' , ennemy_tower)
+    #debug('nbre_tower' , tower)
+    #debug('nbre_mines' , caserne_archer)
+    #debug('dico_units:', dico_units)
+    #debug('dico_units:', dico_units[0])
+    #debug('dico_unit: position_queen', dico_units[0][-1]['position'])
+    #récupération du site le plus proche de la Reine ( id_min)
+    #récupération des distances des sites de la Reine ( dico_dist)
+    
+    id_min, distance_reine_sites = distance_min_queen_site(coord_dict, dico_structure, dico_units[0][-1]['position'], touched_site)
+    queen = Queen()
+    #debug("id_min", id_min)
+    if liste_mine:
+        debug("liste_mine", liste_mine)
+    #debug("liste_archer", liste_chevalier)
+    #debug("dico", distance_reine_sites)
+    #debug("queen_position",queen.get_position())
+    debug("archers",archer)
+    debug("ennemy_chevalier",ennemy_chevalier)
+    debug("queen_strategy",queen._queen_strategy)
+    debug("touched_site", touched_site)
+    debug('switch', switch)
+    debug('tower', tower)
+    
+
+
+    # First line: A valid queen action
+    # Second line: A set of training instructions
+
+    
+    queen.queen_action()  
+    queen.training(
+        
+        
+
+    
+    #créer une fonction qui calcule la distance minimale entre la reine et un des sites
+    
+
+    
